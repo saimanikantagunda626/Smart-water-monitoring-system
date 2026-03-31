@@ -1,4 +1,4 @@
-const API = "http://localhost:5000/api";
+const API = "https://smart-water-monitoring-system-hcgv.onrender.com/api";
 
 /* ======================
    LOGIN
@@ -8,7 +8,7 @@ async function login(){
 const email=document.getElementById("email").value;
 const password=document.getElementById("password").value;
 
-const res=await fetch("http://localhost:5000/api/auth/login",{
+const res=await fetch(`${API}/auth/login`,{
 method:"POST",
 headers:{"Content-Type":"application/json"},
 body:JSON.stringify({email,password})
