@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Login | Smart Water Management</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+
+<!-- ✅ Prevent returning after login -->
+
+
+<style>
+
+*{
+margin:0;
+padding:0;
+box-sizing:border-box;
+font-family:'Inter',sans-serif;
+}
+
+.video-bg{
+position:fixed;
+top:0;
+left:0;
+width:100%;
+height:100%;
+object-fit:cover;
+z-index:-2;
+}
+
+.overlay{
+position:fixed;
+top:0;
+left:0;
+width:100%;
+height:100%;
+background:rgba(0,0,0,0.55);
+z-index:-1;
+}
+
+body{
+height:100vh;
+display:flex;
+justify-content:center;
+align-items:center;
+color:white;
+}
+
+.login-box{
+width:360px;
+padding:40px;
+background:rgba(255,255,255,0.12);
+backdrop-filter:blur(15px);
+border-radius:20px;
+box-shadow:0 10px 40px rgba(0,0,0,0.4);
+text-align:center;
+}
+
+input{
+width:100%;
+padding:12px;
+margin:10px 0;
+border:none;
+border-radius:8px;
+outline:none;
+}
+
+button{
+width:100%;
+padding:12px;
+border:none;
+border-radius:8px;
+background:#007bff;
+color:white;
+cursor:pointer;
+}
+
+button:hover{
+background:#0056b3;
+}
+
+#error{
+color:#ff6b6b;
+margin-top:10px;
+}
+.back-video {
+    position: fixed;
+    top: 0;
+    left: 0;
+    min-width: 100%;
+    min-height: 100%;
+    object-fit: cover;
+    z-index: -2;
+}
+</style>
+</head>
+
+<body>
+
+<!-- Background Video -->
+<video class="back-video" autoplay muted loop playsinline>
+    <source src="assets/Video Project 2.mp4" type="video/mp4">
+</video>
+
+<div class="overlay"></div>
+
+<div class="login-box">
+
+<h2>💧 Smart Water Monitoring</h2>
+
+<input type="email" id="email" placeholder="Email" required>
+<input type="password" id="password" placeholder="Password" required>
+
+<button onclick="login()">Login</button>
+
+<p id="error"></p>
+
+<p style="margin-top:15px">
+Don't have account?
+<a href="register.html">Register</a>
+</p>
+
+</div>
+
+<script src="js/app.js"></script>
+
+</body>
+</html>

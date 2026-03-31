@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>City Analysis | Smart Water</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<style>
+:root{
+  --primary-blue:#007bff;
+  --dark-navy:#1a1c23;
+  --bg-light:#f8fafc;
+}
+
+body{
+  font-family:'Inter',sans-serif;
+  background:var(--bg-light);
+  margin:0;
+}
+
+header{
+  background:var(--dark-navy);
+  color:white;
+  padding:1.5rem 5%;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+}
+
+.container{
+  max-width:1200px;
+  margin:40px auto;
+  padding:0 20px;
+}
+
+.controls-section{
+  background:white;
+  padding:20px;
+  border-radius:12px;
+  margin-bottom:30px;
+}
+
+select{
+  padding:10px 15px;
+  border-radius:8px;
+  border:1px solid #ddd;
+  font-size:1rem;
+}
+
+.chart-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(500px,1fr));
+  gap:25px;
+}
+
+.chart-card{
+  background:white;
+  padding:25px;
+  border-radius:16px;
+  box-shadow:0 10px 25px rgba(0,0,0,0.05);
+}
+
+canvas{
+  height:300px !important;
+}
+</style>
+</head>
+
+<body>
+
+<header>
+<h2>City Analytics</h2>
+<a href="home.html" style="color:#00d2ff;text-decoration:none;">← Back</a>
+</header>
+
+<div class="container">
+
+<div class="controls-section">
+<label>Select City:</label>
+<select id="citySelect" onchange="loadCity()">
+<option value="">-- Select City --</option>
+</select>
+</div>
+
+<div class="chart-grid">
+<div class="chart-card">
+<h4>Monthly Water Usage</h4>
+<canvas id="barChart"></canvas>
+</div>
+
+<div class="chart-card">
+<h4>Water Conservation</h4>
+<canvas id="lineChart"></canvas>
+</div>
+</div>
+
+</div>
+
+<script>
+const API="http://localhost:5000/api";
+
+let barChart;
+let lineChart;
+
+const monthOrder=[
+"January","February","March","April","May","June",
+"July","August","September","October","November","December"
+];
+
+
+// ✅ LOAD ALL CITIES FROM DATABASE
+async function loadCities(){
+try{
+const res=await fetch(API+"/water/cities/all");
+const cities=await res.json();
+
+const select=document.getElementById("citySelect");
+
+cities.forEach(city=>{
+const option=document.createElement("option");
+option.value=city;
+option.textContent=city;
+select.appendChild(option);
+});
+
+}catch(err){
+console.log("Error loading cities",err);
+}
+}
+
+
+// ✅ LOAD CITY DATA
+async function loadCity(){
+
+const city=document.getElementById("citySelect").value;
+if(!city) return;
+
+const res=await fetch(`${API}/water/${city}`);
+const data=await res.json();
+
+
+// Sort Month Wise
+data.sort((a,b)=>
+monthOrder.indexOf(a.month)-monthOrder.indexOf(b.month)
+);
+
+const months=data.map(d=>d.month);
+const usage=data.map(d=>d.usage);
+const conserved=data.map(d=>d.conserved);
+
+
+// Destroy old charts
+if(barChart) barChart.destroy();
+if(lineChart) lineChart.destroy();
+
+
+// Bar Chart
+barChart=new Chart(document.getElementById("barChart"),{
+type:"bar",
+data:{
+labels:months,
+datasets:[{
+label:"Water Usage (Litres)",
+data:usage,
+backgroundColor:"#007bff"
+}]
+}
+});
+
+
+// Line Chart
+lineChart=new Chart(document.getElementById("lineChart"),{
+type:"line",
+data:{
+labels:months,
+datasets:[{
+label:"Water Conserved (%)",
+data:conserved,
+borderColor:"#28a745",
+fill:false
+}]
+}
+});
+}
+
+
+// ✅ LOAD ON PAGE START
+loadCities();
+
+</script>
+
+</body>
+</html>

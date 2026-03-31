@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard | Smart Water</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+
+<style>
+:root{
+--primary-blue:#007bff;
+--dark-navy:#1a1c23;
+--bg-light:#f0f2f5;
+--success:#2ecc71;
+--warning:#f1c40f;
+}
+
+*{margin:0;padding:0;box-sizing:border-box;}
+
+body{
+font-family:'Inter',sans-serif;
+background:var(--bg-light);
+display:flex;
+min-height:100vh;
+}
+
+/* SIDEBAR */
+.sidebar{
+width:260px;
+background:var(--dark-navy);
+color:white;
+padding:30px 20px;
+}
+
+.sidebar h2{
+color:#00d2ff;
+margin-bottom:30px;
+text-align:center;
+}
+
+/* MAIN */
+.main-content{
+flex:1;
+padding:40px;
+}
+
+.header-flex{
+display:flex;
+justify-content:space-between;
+align-items:center;
+margin-bottom:30px;
+}
+
+.welcome-card{
+background:white;
+padding:30px;
+border-radius:16px;
+box-shadow:0 4px 20px rgba(0,0,0,0.05);
+margin-bottom:30px;
+}
+
+.stats-grid{
+display:grid;
+grid-template-columns:repeat(auto-fit,minmax(200px,1fr));
+gap:20px;
+}
+
+.stat-box{
+background:white;
+padding:20px;
+border-radius:12px;
+border-left:5px solid var(--primary-blue);
+}
+
+.stat-box.success{border-left-color:var(--success);}
+.stat-box.alert{border-left-color:var(--warning);}
+
+.stat-box span{
+font-size:0.85rem;
+color:#777;
+font-weight:600;
+}
+
+.stat-box h3{
+font-size:1.6rem;
+margin-top:5px;
+}
+
+.btn-home{
+background:var(--primary-blue);
+color:white;
+padding:10px 20px;
+border-radius:8px;
+text-decoration:none;
+}
+</style>
+</head>
+
+<body>
+
+<div class="sidebar">
+<h2>SmartWater</h2>
+</div>
+
+<div class="main-content">
+
+<div class="header-flex">
+<div>
+<p style="color:#888">System Dashboard</p>
+<h2 id="User_show"></h2>
+</div>
+<a href="home.html" class="btn-home">Go to Home</a>
+</div>
+
+<div class="welcome-card">
+<p>Live analytics powered directly from MongoDB water monitoring database.</p>
+</div>
+
+<div class="stats-grid">
+
+<div class="stat-box">
+<span>Live Cities</span>
+<h3 id="cityCount">0</h3>
+</div>
+
+<div class="stat-box success">
+<span>Avg. Conservation</span>
+<h3 id="avgConservation">0%</h3>
+</div>
+
+<div class="stat-box alert">
+<span>Alerts (Low Conservation)</span>
+<h3 id="alerts">0</h3>
+</div>
+
+<div class="stat-box">
+<span>Total Records</span>
+<h3 id="totalRecords">0</h3>
+</div>
+
+</div>
+</div>
+
+<script>
+
+const API="http://localhost:5000/api/water";
+
+/* =========================
+   SHOW USER
+=========================*/
+function showUser(){
+const user=localStorage.getItem("User") || "User";
+document.getElementById("User_show")
+.innerText=`Welcome back, ${user} 👋`;
+}
+
+/* =========================
+   LOAD DASHBOARD DATA
+=========================*/
+async function loadDashboard(){
+
+try{
+
+// 1️⃣ Get Cities
+const res=await fetch(API+"/cities/all");
+const cities=await res.json();
+
+document.getElementById("cityCount").innerText=cities.length;
+
+let totalRecords=0;
+let conservationSum=0;
+let conservationCount=0;
+let alerts=0;
+
+// 2️⃣ Loop every city
+for(const city of cities){
+
+const r=await fetch(`${API}/${city}`);
+const data=await r.json();
+
+totalRecords+=data.length;
+
+data.forEach(d=>{
+if(d.conserved){
+conservationSum+=Number(d.conserved);
+conservationCount++;
+
+if(d.conserved<50) alerts++;
+}
+});
+}
+
+// 3️⃣ Average Conservation
+const avg=
+conservationCount>0
+?Math.round(conservationSum/conservationCount)
+:0;
+
+document.getElementById("avgConservation")
+.innerText=avg+"%";
+
+document.getElementById("alerts")
+.innerText=alerts;
+
+document.getElementById("totalRecords")
+.innerText=totalRecords;
+
+}
+catch(err){
+console.log("Dashboard Load Error",err);
+}
+
+}
+
+showUser();
+loadDashboard();
+
+</script>
+
+</body>
+</html>

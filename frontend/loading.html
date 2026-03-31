@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>Smart Water Loading</title>
+
+<style>
+body{
+margin:0;
+background:black;
+height:100vh;
+overflow:hidden;
+}
+
+/* FULL SCREEN VIDEO */
+video{
+position:fixed;
+top:0;
+left:0;
+width:100%;
+height:100%;
+object-fit:cover;
+}
+</style>
+</head>
+
+<body>
+
+<video id="introVideo" autoplay muted playsinline>
+<source src="assets/intro.mp4" type="video/mp4">
+</video>
+
+<script>
+
+/* 🔥 CHECK LOGIN FIRST */
+const user = localStorage.getItem("User");
+
+if(!user){
+    window.location.href="login.html";
+}
+
+/* PLAY VIDEO ONLY FOR 2 SECONDS */
+setTimeout(() => {
+    window.location.href="home.html";
+}, 500);
+
+</script>
+
+</body>
+</html>

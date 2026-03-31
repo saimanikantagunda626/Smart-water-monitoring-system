@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Water Usage Reports</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+:root{
+  --primary-blue:#007bff;
+  --dark-navy:#1a1c23;
+  --bg-light:#f4f7f9;
+  --success-green:#28a745;
+}
+
+*{margin:0;padding:0;box-sizing:border-box;}
+
+body{
+  font-family:'Inter',sans-serif;
+  background:var(--bg-light);
+}
+
+/* HEADER */
+header{
+  background:var(--dark-navy);
+  color:white;
+  padding:1rem 5%;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+}
+
+nav a{
+  color:#00d2ff;
+  text-decoration:none;
+}
+
+/* CONTAINER */
+.container{
+  max-width:800px;
+  margin:50px auto;
+  padding:0 20px;
+}
+
+.report-config-card{
+  background:white;
+  padding:40px;
+  border-radius:20px;
+  box-shadow:0 10px 30px rgba(0,0,0,0.08);
+  text-align:center;
+}
+
+.section-title{
+  margin-bottom:25px;
+}
+
+#citySelect{
+  width:100%;
+  max-width:400px;
+  padding:12px 20px;
+  border-radius:10px;
+  border:2px solid #e0e0e0;
+  margin-bottom:30px;
+  font-size:1rem;
+}
+
+/* REPORT RESULT */
+#reportResult{
+  margin-top:25px;
+}
+
+.usage-stat{
+  background:linear-gradient(135deg,#f0f7ff,#e0efff);
+  padding:30px;
+  border-radius:15px;
+  display:inline-block;
+  min-width:260px;
+}
+
+.total-number{
+  font-size:2.8rem;
+  font-weight:700;
+  color:var(--primary-blue);
+}
+
+.unit{
+  font-size:1.2rem;
+  margin-left:6px;
+}
+
+.status-badge{
+  margin-top:15px;
+  padding:6px 15px;
+  background:var(--success-green);
+  color:white;
+  border-radius:20px;
+  display:inline-block;
+}
+</style>
+</head>
+
+<body>
+
+<header>
+<h2>Water Asage Reports Of A City</h2>
+<nav><a href="home.html">← Back to Home</a></nav>
+</header>
+
+<div class="container">
+<div class="report-config-card">
+
+<h2 class="section-title">Annual Usage Analysis</h2>
+
+<select id="citySelect" onchange="generateReport()">
+<option value="">Choose a City...</option>
+</select>
+
+<div id="reportResult">
+<p style="color:#aaa">No report generated yet.</p>
+</div>
+<canvas id="pdfChart" width="400" height="200" style="display:none;"></canvas>
+
+</div>
+</div>
+
+<script>
+
+const API="http://localhost:5000/api/water";
+
+let currentReportData=[];
+let currentCity="";
+let chartInstance=null;
+
+/* =========================
+   LOAD CITIES
+=========================*/
+async function loadCities(){
+
+const select=document.getElementById("citySelect");
+
+const res=await fetch(API+"/cities/all");
+const cities=await res.json();
+
+cities.forEach(city=>{
+const option=document.createElement("option");
+option.value=city;
+option.textContent=city;
+select.appendChild(option);
+});
+}
+
+/* =========================
+   GENERATE REPORT
+=========================*/
+async function generateReport(){
+
+const city=document.getElementById("citySelect").value;
+const reportDiv=document.getElementById("reportResult");
+
+if(!city) return;
+
+const res=await fetch(`${API}/${city}`);
+const data=await res.json();
+
+if(!data.length){
+reportDiv.innerHTML="<p>No data available</p>";
+return;
+}
+
+currentReportData=data;
+currentCity=city;
+
+/* TOTAL */
+const totalUsage=data.reduce(
+(sum,item)=>sum+Number(item.usage),0
+);
+
+/* TABLE */
+let tableRows="";
+data.forEach(d=>{
+tableRows+=`
+<tr>
+<td>${d.month}</td>
+<td>${d.usage} ML</td>
+</tr>`;
+});
+
+/* SHOW REPORT */
+reportDiv.innerHTML=`
+
+<div class="usage-stat">
+<h3>Total Annual Usage</h3>
+<span class="total-number">${totalUsage}</span>
+<span class="unit">ML</span>
+<div class="status-badge">Data Verified</div>
+</div>
+
+<h3 style="margin-top:30px">Monthly Breakdown</h3>
+
+<table border="1" cellpadding="10"
+style="margin:auto;border-collapse:collapse">
+<tr>
+<th>Month</th>
+<th>Usage</th>
+</tr>
+${tableRows}
+</table>
+
+<br>
+
+<canvas id="reportChart" height="120"></canvas>
+
+<br>
+
+<button onclick="downloadPDF()"
+style="
+padding:12px 20px;
+background:#007bff;
+color:white;
+border:none;
+border-radius:8px;
+cursor:pointer;
+margin-top:20px;">
+Download Smart PDF Report
+</button>
+`;
+
+/* =========================
+   DRAW CHART ON PAGE
+=========================*/
+
+const months=data.map(d=>d.month);
+const usage=data.map(d=>d.usage);
+
+if(chartInstance) chartInstance.destroy();
+
+chartInstance=new Chart(
+document.getElementById("reportChart"),
+{
+type:"bar",
+data:{
+labels:months,
+datasets:[{
+label:"Water Usage",
+data:usage
+}]
+}
+});
+
+}
+
+/* =========================
+   DOWNLOAD SMART PDF
+=========================*/
+async function downloadPDF(){
+
+const { jsPDF } = window.jspdf;
+const doc=new jsPDF();
+
+const months=currentReportData.map(d=>d.month);
+const usage=currentReportData.map(d=>d.usage);
+
+/* CREATE HIDDEN CHART */
+const canvas=document.createElement("canvas");
+canvas.width=400;
+canvas.height=200;
+
+new Chart(canvas,{
+type:"bar",
+data:{
+labels:months,
+datasets:[{
+label:"Water Usage",
+data:usage
+}]
+},
+options:{
+responsive:false,
+animation:false
+}
+});
+
+await new Promise(r=>setTimeout(r,600));
+
+const chartImage=canvas.toDataURL("image/png");
+
+/* HEADER */
+doc.setFontSize(18);
+doc.text("Water Usage Report",20,20);
+
+doc.setFontSize(14);
+doc.text(`City: ${currentCity}`,20,30);
+
+/* TABLE */
+let y=45;
+
+doc.setFontSize(12);
+doc.text("Month",20,y);
+doc.text("Usage (ML)",100,y);
+
+y+=10;
+
+currentReportData.forEach(d=>{
+doc.text(d.month,20,y);
+doc.text(String(d.usage),100,y);
+y+=8;
+});
+
+/* TOTAL + ANALYSIS */
+const total=currentReportData.reduce(
+(sum,item)=>sum+Number(item.usage),0
+);
+
+const avg=Math.round(total/12);
+
+const maxMonth=currentReportData.reduce((a,b)=>a.usage>b.usage?a:b);
+const minMonth=currentReportData.reduce((a,b)=>a.usage<b.usage?a:b);
+
+/* NEW PAGE FOR ANALYSIS */
+doc.addPage();
+
+doc.text("Water Usage Trend",20,20);
+
+doc.addImage(chartImage,"PNG",15,30,180,90);
+
+/* ANALYSIS TEXT */
+const analysis=`
+This Smart Water Monitoring report evaluates the annual
+water consumption pattern of ${currentCity}.
+
+Total Annual Consumption: ${total} ML
+Average Monthly Usage: ${avg} ML.
+
+Highest water demand was observed in ${maxMonth.month},
+while the lowest consumption occurred during ${minMonth.month}.
+
+These patterns indicate seasonal variation in water usage.
+Adoption of rainwater harvesting, smart metering,
+and conservation practices can significantly improve
+water sustainability for future urban development.
+`;
+
+const splitText=doc.splitTextToSize(analysis,180);
+
+doc.text(splitText,15,130);
+
+/* SAVE */
+doc.save(`${currentCity}-SmartWaterReport.pdf`);
+}
+
+loadCities();
+
+</script>
+</body>
+</html>
